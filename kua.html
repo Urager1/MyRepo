@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Planner</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0f172a;
+            --bg-soft: #111827;
+            --card: #020617;
+            --accent: #6366f1;
+            --accent-soft: rgba(99,102,241,0.15);
+            --text: #e5e7eb;
+            --muted: #6b7280;
+            --danger: #f97373;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1d2544 0, #020617 50%, #000 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            gap: 16px;
+        }
+
+        .title-block h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-block span.emoji {
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .datetime {
+            text-align: right;
+        }
+
+        .time {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .date {
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .mood-select {
+            margin-top: 8px;
+        }
+
+        .mood-select label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-right: 8px;
+        }
+
+        .mood-select select {
+            background: var(--bg-soft);
+            color: var(--text);
+            border-radius: 999px;
+            border: 1px solid #1f2937;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr;
+            gap: 18px;
+        }
+
+        .card {
+            background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(15,23,42,1));
+            border-radius: 18px;
+            border: 1px solid rgba(148,163,184,0.18);
+            box-shadow: 0 20px 45px rgba(15,23,42,0.8);
+            padding: 16px 18px 18px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(96,165,250,0.16), transparent 55%);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        .card-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 1.1rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(129,140,248,0.8);
+        }
+
+        /* Tasks */
+        .task-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .task-input input,
+        .task-input select {
+            background: #020617;
+            border-radius: 999px;
+            border: 1px solid #1f2937;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .task-input input {
+            flex: 1;
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            padding: 8px 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 8px 20px rgba(99,102,241,0.6);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn-ghost {
+            background: rgba(15,23,42,0.6);
+            color: var(--muted);
+            border: 1px solid #1f2937;
+        }
+
+        .btn-ghost:hover {
+            border-color: #374151;
+            color: #e5e7eb;
+        }
+
+        .tasks-list {
+            max-height: 260px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            background: rgba(15,23,42,0.9);
+            border: 1px solid #111827;
+            margin-bottom: 6px;
+        }
+
+        .task-item.done {
+            opacity: 0.5;
+        }
+
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border-radius: 6px;
+            border: 1px solid #4b5563;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: #020617;
+            font-size: 0.8rem;
+        }
+
+        .checkbox.checked {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .task-main {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 0.9rem;
+        }
+
+        .task-title.done {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+
+        .task-meta {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+        }
+
+        .badge-priority-high {
+            background: rgba(248,113,113,0.12);
+            color: #fca5a5;
+        }
+
+        .badge-priority-med {
+            background: rgba(250,204,21,0.12);
+            color: #facc15;
+        }
+
+        .badge-priority-low {
+            background: rgba(52,211,153,0.12);
+            color: #6ee7b7;
+        }
+
+        .small-btn {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .small-btn:hover {
+            color: #fca5a5;
+        }
+
+        .tasks-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .filters button {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            color: var(--muted);
+        }
+
+        .filters button.active {
+            background: rgba(148,163,184,0.18);
+            color: #e5e7eb;
+        }
+
+        /* Notes */
+        .notes-input {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .notes-input input,
+        .notes-input textarea {
+            background: #020617;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            padding: 8px 10px;
+            color: var(--text);
+            font-size: 0.85rem;
+        }
+
+        .notes-input textarea {
+            resize: vertical;
+            min-height: 60px;
+            max-height: 120px;
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .note {
+            border-radius: 12px;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            background: radial-gradient(circle at top, rgba(59,130,246,0.18), rgba(15,23,42,1));
+            border: 1px solid #1f2937;
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .note-meta {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Habits + quick stats */
+        .habits-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .habit-pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.9);
+            border: 1px solid #1f2937;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .habit-pill.done {
+            background: rgba(34,197,94,0.18);
+            border-color: #22c55e;
+        }
+
+        .habit-pill span.check {
+            width: 14px;
+            height: 14px;
+            border-radius: 999px;
+            border: 1px solid #4b5563;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+        }
+
+        .habit-pill.done span.check {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .habit-add {
+            margin-top: 6px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .habit-add input {
+            flex: 1;
+            background: #020617;
+            border-radius: 999px;
+            border: 1px solid #1f2937;
+            padding: 6px 10px;
+            color: var(--text);
+            font-size: 0.8rem;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+
+        .stat-pill {
+            flex: 1;
+            padding: 6px 8px;
+            border-radius: 10px;
+            background: rgba(15,23,42,0.9);
+            border: 1px solid #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .stat-value.green {
+            color: #4ade80;
+        }
+
+        .stat-value.orange {
+            color: #fdba74;
+        }
+
+        /* Scrollbar small */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 999px;
+        }
+
+        @media (max-width: 840px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .datetime {
+                text-align: left;
+            }
+
+            .notes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .card {
+                padding: 12px 12px 14px;
+            }
+
+            .time {
+                font-size: 1.2rem;
+            }
+
+            .title-block h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header>
+        <div class="title-block">
+            <h1><span class="emoji">🧠</span> Daily Planner</h1>
+            <p class="subtitle">Úlohy, poznámky, návyky a nálada – všetko na jednom mieste.</p>
+        </div>
+        <div class="datetime">
+            <div class="time" id="timeDisplay">--:--</div>
+            <div class="date" id="dateDisplay">---</div>
+            <div class="mood-select">
+                <label for="moodSelect">Dnešná nálada:</label>
+                <select id="moodSelect">
+                    <option value="neutral">😐 Neutrálna</option>
+                    <option value="happy">😊 Dobrá</option>
+                    <option value="great">😄 Skvelá</option>
+                    <option value="tired">😴 Unavená</option>
+                    <option value="sad">😕 Slabšia</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Left side: Tasks + Notes -->
+        <section>
+            <div class="card">
+                <div class="card-inner">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="icon">✅</span>
+                            Úlohy na dnes
+                        </div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="card-subtitle">Naplánuj si, čo chceš dnes stihnúť.</div>
+
+                    <div class="task-input" style="margin-top:10px;">
+                        <input type="text" id="taskTitleInput" placeholder="Napíš úlohu (napr. 'Učiť sa 30 minút')">
+                        <select id="taskPriorityInput">
+                            <option value="med">Stredná priorita</option>
+                            <option value="high">Vysoká priorita</option>
+                            <option value="low">Nízka priorita</option>
+                        </select>
+                        <button class="btn btn-primary" id="addTaskBtn">+ Pridať</button>
+                    </div>
+
+                    <div class="tasks-list" id="tasksList"></div>
+
+                    <div class="tasks-footer">
+                        <div id="tasksSummary">0 úloh</div>
+                        <div class="filters">
+                            <button data-filter="all" class="active">Všetko</button>
+                            <button data-filter="active">Aktívne</button>
+                            <button data-filter="done">Hotové</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:14px;">
+                <div class="card-inner">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="icon">📝</span>
+                            Rýchle poznámky
+                        </div>
+                    </div>
+                    <div class="card-subtitle">Myšlienky, nápady alebo veci, na ktoré nechceš zabudnúť.</div>
+
+                    <div class="notes-input" style="margin-top:10px;">
+                        <input type="text" id="noteTitleInput" placeholder="Nadpis poznámky">
+                        <textarea id="noteBodyInput" placeholder="Obsah poznámky"></textarea>
+                        <button class="btn btn-ghost" id="addNoteBtn">+ Uložiť poznámku</button>
+                    </div>
+
+                    <div class="notes-grid" id="notesGrid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right side: Habits + stats -->
+        <section>
+            <div class="card">
+                <div class="card-inner">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="icon">📈</span>
+                            Návykový panel
+                        </div>
+                    </div>
+                    <div class="card-subtitle">Sleduj malé veci, ktoré chceš robiť každý deň.</div>
+
+                    <div class="habit-add" style="margin-top:10px;">
+                        <input type="text" id="habitInput" placeholder="Pridaj návyk (napr. 'Piť vodu')">
+                        <button class="btn btn-ghost" id="addHabitBtn">+</button>
+                    </div>
+
+                    <div class="habits-list" id="habitsList"></div>
+
+                    <div class="stats-row">
+                        <div class="stat-pill">
+                            <div>
+                                <div class="stat-label">Splnené úlohy</div>
+                                <div class="stat-value green" id="statTasksDone">0</div>
+                            </div>
+                            <div style="font-size:1.1rem;">🎯</div>
+                        </div>
+                        <div class="stat-pill">
+                            <div>
+                                <div class="stat-label">Splnené návyky</div>
+                                <div class="stat-value orange" id="statHabitsDone">0</div>
+                            </div>
+                            <div style="font-size:1.1rem;">🔥</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:14px;">
+                <div class="card-inner">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <span class="icon">💬</span>
+                            Dnešný prehľad
+                        </div>
+                    </div>
+                    <div class="card-subtitle" id="dailySummaryText">
+                        Začni pridávať úlohy a návyky a uvidíš krátke zhrnutie dňa.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    // --- Helpers: Local storage ---
+    function loadState() {
+        try {
+            const data = localStorage.getItem('daily_planner_state_v1');
+            return data ? JSON.parse(data) : {
+                tasks: [],
+                notes: [],
+                habits: [],
+                mood: 'neutral'
+            };
+        } catch (e) {
+            return { tasks: [], notes: [], habits: [], mood: 'neutral' };
+        }
+    }
+
+    function saveState() {
+        localStorage.setItem('daily_planner_state_v1', JSON.stringify(state));
+    }
+
+    // --- Global state ---
+    let state = loadState();
+    let taskFilter = 'all';
+
+    // --- DOM refs ---
+    const timeDisplay = document.getElementById('timeDisplay');
+    const dateDisplay = document.getElementById('dateDisplay');
+    const moodSelect = document.getElementById('moodSelect');
+
+    const taskTitleInput = document.getElementById('taskTitleInput');
+    const taskPriorityInput = document.getElementById('taskPriorityInput');
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    const tasksList = document.getElementById('tasksList');
+    const tasksSummary = document.getElementById('tasksSummary');
+    const filterButtons = document.querySelectorAll('.filters button');
+
+    const noteTitleInput = document.getElementById('noteTitleInput');
+    const noteBodyInput = document.getElementById('noteBodyInput');
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    const notesGrid = document.getElementById('notesGrid');
+
+    const habitInput = document.getElementById('habitInput');
+    const addHabitBtn = document.getElementById('addHabitBtn');
+    const habitsList = document.getElementById('habitsList');
+
+    const statTasksDone = document.getElementById('statTasksDone');
+    const statHabitsDone = document.getElementById('statHabitsDone');
+    const dailySummaryText = document.getElementById('dailySummaryText');
+
+    // --- Clock & date ---
+    function updateDateTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2,'0');
+        const minutes = String(now.getMinutes()).padStart(2,'0');
+        timeDisplay.textContent = `${hours}:${minutes}`;
+
+        const days = ['Nedeľa','Pondelok','Utorok','Streda','Štvrtok','Piatok','Sobota'];
+        const months = ['januára','februára','marca','apríla','mája','júna','júla','augusta','septembra','októbra','novembra','decembra'];
+
+        const d = now.getDate();
+        const dayName = days[now.getDay()];
+        const monthName = months[now.getMonth()];
+        const year = now.getFullYear();
+
+        dateDisplay.textContent = `${dayName}, ${d}. ${monthName} ${year}`;
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000 * 30);
+
+    // --- Render Functions ---
+    function renderTasks() {
+        let tasks = state.tasks || [];
+        let filtered = tasks;
+        if (taskFilter === 'active') {
+            filtered = tasks.filter(t => !t.done);
+        } else if (taskFilter === 'done') {
+            filtered = tasks.filter(t => t.done);
+        }
+
+        if (filtered.length === 0) {
+            tasksList.innerHTML = '<p style="font-size:0.85rem;color:#6b7280;margin-top:4px;">Zatiaľ žiadne úlohy. Pridaj prvú hore. 🙂</p>';
+        } else {
+            tasksList.innerHTML = filtered.map(task => {
+                const priorityClass =
+                    task.priority === 'high' ? 'badge-priority-high' :
+                    task.priority === 'low' ? 'badge-priority-low' : 'badge-priority-med';
+
+                const priorityText =
+                    task.priority === 'high' ? 'Vysoká priorita' :
+                    task.priority === 'low' ? 'Nízka priorita' : 'Stredná priorita';
+
+                return `
+                  <div class="task-item ${task.done ? 'done' : ''}" data-id="${task.id}">
+                    <div class="checkbox ${task.done ? 'checked' : ''}"></div>
+                    <div class="task-main">
+                        <div class="task-title ${task.done ? 'done' : ''}">${escapeHtml(task.title)}</div>
+                        <div class="task-meta">
+                            <span class="badge ${priorityClass}">${priorityText}</span>
+                            ${task.createdAt ? `<span style="margin-left:8px;">${task.createdAt}</span>` : ''}
+                        </div>
+                    </div>
+                    <button class="small-btn delete-task">Odstrániť</button>
+                  </div>`;
+            }).join('');
+        }
+
+        // summary
+        const total = tasks.length;
+        const done = tasks.filter(t => t.done).length;
+        tasksSummary.textContent = `${done}/${total} hotových`;
+
+        // stats
+        statTasksDone.textContent = done;
+
+        // click handlers (checkbox + delete)
+        document.querySelectorAll('.task-item .checkbox').forEach(el => {
+            el.onclick = () => {
+                const id = el.parentElement.getAttribute('data-id');
+                toggleTaskDone(id);
+            };
+        });
+        document.querySelectorAll('.task-item .delete-task').forEach(el => {
+            el.onclick = () => {
+                const id = el.parentElement.getAttribute('data-id');
+                deleteTask(id);
+            };
+        });
+
+        renderDailySummary();
+    }
+
+    function renderNotes() {
+        const notes = state.notes || [];
+        if (notes.length === 0) {
+            notesGrid.innerHTML = '<p style="font-size:0.8rem;color:#6b7280;margin-top:4px;">Žiadne poznámky. Napíš si prvú myšlienku alebo nápad. ✍️</p>';
+        } else {
+            notesGrid.innerHTML = notes.map(note => `
+                <div class="note" data-id="${note.id}">
+                    <div class="note-title">${escapeHtml(note.title || 'Bez názvu')}</div>
+                    <div>${escapeHtml(note.body || '')}</div>
+                    <div class="note-meta">
+                        <span>${note.createdAt || ''}</span>
+                        <button class="small-btn delete-note">Zmazať</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.querySelectorAll('.note .delete-note').forEach(el => {
+            el.onclick = () => {
+                const id = el.closest('.note').getAttribute('data-id');
+                deleteNote(id);
+            };
+        });
+
+        renderDailySummary();
+    }
+
+    function renderHabits() {
+        const habits = state.habits || [];
+        if (habits.length === 0) {
+            habitsList.innerHTML = '<p style="font-size:0.8rem;color:#6b7280;margin-top:4px;">Pridaj si 2–3 malé návyky, ktoré chceš robiť každý deň. 💧📖🏃‍♂️</p>';
+        } else {
+            habitsList.innerHTML = habits.map(habit => `
+                <div class="habit-pill ${habit.doneToday ? 'done' : ''}" data-id="${habit.id}">
+                    <span class="check">${habit.doneToday ? '✓' : ''}</span>
+                    <span>${escapeHtml(habit.title)}</span>
+                </div>
+            `).join('');
+        }
+
+        document.querySelectorAll('.habit-pill').forEach(el => {
+            el.onclick = () => {
+                const id = el.getAttribute('data-id');
+                toggleHabit(id);
+            };
+        });
+
+        const done = habits.filter(h => h.doneToday).length;
+        statHabitsDone.textContent = done;
+
+        renderDailySummary();
+    }
+
+    function renderMood() {
+        moodSelect.value = state.mood || 'neutral';
+    }
+
+    function renderDailySummary() {
+        const tasks = state.tasks || [];
+        const habits = state.habits || [];
+        const notes = state.notes || [];
+        const mood = state.mood || 'neutral';
+
+        const doneTasks = tasks.filter(t => t.done).length;
+        const doneHabits = habits.filter(h => h.doneToday).length;
+
+        let moodText = '';
+        if (mood === 'great') moodText = 'Máš skvelú náladu, využi ju naplno. 💪';
+        else if (mood === 'happy') moodText = 'Dobrú náladu sa oplatí pretaviť do akcie. 🙂';
+        else if (mood === 'tired') moodText = 'Si unavený/á, tak nezabudni zaradiť aj oddych. 😴';
+        else if (mood === 'sad') moodText = 'Nie každý deň je super, malý krok dnes stačí. 💙';
+        else moodText = 'Začni malými krokmi, stačí jedna úloha alebo návyk.';
+
+        const parts = [];
+        parts.push(`Dnes máš ${tasks.length} úloh, z toho ${doneTasks} hotových.`);
+        parts.push(`Návykov máš ${habits.length}, dnes splnených ${doneHabits}.`);
+        if (notes.length > 0) {
+            parts.push(`Zapísaných poznámok: ${notes.length}.`);
+        }
+        parts.push(moodText);
+
+        dailySummaryText.textContent = parts.join(' ');
+    }
+
+    // --- Actions ---
+    function addTask() {
+        const title = taskTitleInput.value.trim();
+        if (!title) return;
+        const priority = taskPriorityInput.value || 'med';
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        const task = {
+            id: String(Date.now()),
+            title,
+            priority,
+            done: false,
+            createdAt: timeStr
+        };
+        state.tasks.unshift(task);
+        taskTitleInput.value = '';
+        saveState();
+        renderTasks();
+    }
+
+    function toggleTaskDone(id) {
+        state.tasks = state.tasks.map(t =>
+            t.id === id ? { ...t, done: !t.done } : t
+        );
+        saveState();
+        renderTasks();
+    }
+
+    function deleteTask(id) {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        saveState();
+        renderTasks();
+    }
+
+    function addNote() {
+        const title = noteTitleInput.value.trim();
+        const body = noteBodyInput.value.trim();
+        if (!title && !body) return;
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        const note = {
+            id: String(Date.now()),
+            title,
+            body,
+            createdAt: timeStr
+        };
+        state.notes.unshift(note);
+        noteTitleInput.value = '';
+        noteBodyInput.value = '';
+        saveState();
+        renderNotes();
+    }
+
+    function deleteNote(id) {
+        state.notes = state.notes.filter(n => n.id !== id);
+        saveState();
+        renderNotes();
+    }
+
+    function addHabit() {
+        const title = habitInput.value.trim();
+        if (!title) return;
+        const habit = {
+            id: String(Date.now()),
+            title,
+            doneToday: false
+        };
+        state.habits.push(habit);
+        habitInput.value = '';
+        saveState();
+        renderHabits();
+    }
+
+    function toggleHabit(id) {
+        state.habits = state.habits.map(h =>
+            h.id === id ? { ...h, doneToday: !h.doneToday } : h
+        );
+        saveState();
+        renderHabits();
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
+    moodSelect.addEventListener('change', () => {
+        state.mood = moodSelect.value;
+        saveState();
+        renderDailySummary();
+    });
+
+    // --- Event listeners ---
+    addTaskBtn.addEventListener('click', addTask);
+    taskTitleInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter') addTask();
+    });
+
+    addNoteBtn.addEventListener('click', addNote);
+
+    addHabitBtn.addEventListener('click', addHabit);
+    habitInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter') addHabit();
+    });
+
+    document.querySelectorAll('.filters button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            taskFilter = btn.getAttribute('data-filter');
+            renderTasks();
+        });
+    });
+
+    // --- Initial render ---
+    updateDateTime();
+    renderTasks();
+    renderNotes();
+    renderHabits();
+    renderMood();
+    renderDailySummary();
+</script>
+</body>
+</html>
